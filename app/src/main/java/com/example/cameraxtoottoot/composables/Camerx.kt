@@ -12,7 +12,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,8 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,10 +50,11 @@ import com.example.cameraxtoottoot.SquatQuality
 import com.example.cameraxtoottoot.WorkoutResultViewModel
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mlkit.vision.pose.PoseLandmark
+import kotlinx.coroutines.delay
 import java.util.concurrent.Executors
 
 @Composable
-fun CameraPreviewScreen(
+fun CameraPreviewForWorkoutScreen(
     viewModel: MainViewModel,
     workoutResultViewModel: WorkoutResultViewModel
 ) {
@@ -77,11 +75,7 @@ fun CameraPreviewScreen(
         )
     }
     val isFrontCamera = true
-//    val preview = Preview.Builder().build()
-//    val cameraxSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
-//    val imageAnalysis = remember {
-//        ImageAnalysis.Builder().build()
-//    }
+
     LaunchedEffect(Unit) {
         // Get the Provider and the Preview wh
         val cameraProvider = cameraProviderFuture.get()
@@ -134,6 +128,13 @@ fun CameraPreviewScreen(
 
 @Composable
 fun OverlayCanvas(viewModel: MainViewModel, workoutResultViewModel: WorkoutResultViewModel) {
+
+    //Check if we should perform analysis. If not, return
+    val isAnalysisActive by workoutResultViewModel.isAnalysisActive
+    if (!isAnalysisActive) {
+        return
+    }
+
     val poseResults by viewModel.poseResults.collectAsState()
 
     Canvas(
@@ -236,6 +237,30 @@ fun WorkoutScreen(
     workoutResultViewModel: WorkoutResultViewModel,
     event: @Composable () -> Unit,
 ) {
+
+    // Add The Timer Here
+    val isAnalysisActive by workoutResultViewModel.isAnalysisActive
+    val remainingTime by workoutResultViewModel.remainingTime
+
+    LaunchedEffect(Unit) {
+        // Set up the 60 second time slot
+        val totalTime = 60
+        workoutResultViewModel.setRemainingTime(totalTime)
+
+        // 10-second setup period
+        delay(10000L)
+        workoutResultViewModel.startAnalysis()
+
+        // 30-second active analysis period
+        for (time in totalTime downTo 1) {
+            workoutResultViewModel.setRemainingTime(time)
+            delay(1000L)
+        }
+
+        // Stop analysis after 30 seconds
+        workoutResultViewModel.stopAnalysis()
+    }
+
     Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
 
         Column(
@@ -250,33 +275,14 @@ fun WorkoutScreen(
                     .height(80.dp)
                     .padding(start = 40.dp, end = 25.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.Center
             ) {
-                /** TODO: Replace the countdown with the Video Model */
                 Text(
-                    "00:34",
+                    formatSeconds(workoutResultViewModel.remainingTime.value),
                     fontSize = 28.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White
                 )
-
-                Button(
-                    modifier = Modifier.size(40.dp),
-                    onClick = { /** TODO: Add pausing Timer Functionality */ },
-                    contentPadding = PaddingValues(0.dp),
-                    colors = ButtonColors(
-                        containerColor = Color.Transparent,
-                        contentColor = Color.Transparent,
-                        disabledContentColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent
-                    )
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.pause_icon),
-                        contentDescription = "Pause Icon",
-                        modifier = Modifier.size(40.dp)
-                    )
-                }
             }
 
             // Call The Lambda Function Here
@@ -378,6 +384,12 @@ fun WorkoutScreen(
 
 
     }
+}
+
+fun formatSeconds(seconds: Int): String {
+    val numMinutes = seconds / 60
+    val numSeconds = seconds % 60
+    return String.format("%02d:%02d", numMinutes, numSeconds)
 }
 
 @androidx.compose.ui.tooling.preview.Preview

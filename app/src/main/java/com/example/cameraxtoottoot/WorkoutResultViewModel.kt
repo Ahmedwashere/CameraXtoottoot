@@ -1,5 +1,7 @@
 package com.example.cameraxtoottoot
 
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 
@@ -63,6 +65,27 @@ class WorkoutResultViewModel : ViewModel() {
         } else {
             _currPosition = SquatQuality.DEEP_SQUAT
         }
+    }
+
+    // State for the Timer
+
+    // Timer states
+    private val _isAnalysisActive = mutableStateOf(false)
+    val isAnalysisActive: State<Boolean> get() = _isAnalysisActive
+
+    private val _remainingTime = mutableIntStateOf(30) // 30 seconds countdown
+    val remainingTime: State<Int> get() = _remainingTime
+
+    fun startAnalysis() {
+        _isAnalysisActive.value = true
+    }
+
+    fun stopAnalysis() {
+        _isAnalysisActive.value = false
+    }
+
+    fun setRemainingTime(time: Int) {
+        _remainingTime.intValue = time
     }
 
 }
