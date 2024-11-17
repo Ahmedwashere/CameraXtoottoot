@@ -32,6 +32,17 @@ import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult
 
+/**
+ * Use the piece of code below once you are ready to navigate
+ * to a new screen using Jetpack Compose.
+ *
+ * DisposableEffect(Unit) {
+ *     onDispose {
+ *         poseLandmarkerHelper.clearPoseLandmarker()
+ *         executor.shutdown()
+ *     }
+ * }
+ * */
 class PoseLandmarkerHelper(
     var minPoseDetectionConfidence: Float = DEFAULT_POSE_DETECTION_CONFIDENCE,
     var minPoseTrackingConfidence: Float = DEFAULT_POSE_TRACKING_CONFIDENCE,
@@ -41,7 +52,7 @@ class PoseLandmarkerHelper(
     var runningMode: RunningMode = RunningMode.IMAGE,
     val context: Context,
     // this listener is only used when running in RunningMode.LIVE_STREAM
-    val poseLandmarkerHelperListener: LandmarkerListener? = null
+    val poseLandmarkerHelperListener: LandmarkerListener? = null,
 ) {
 
     // For this example this needs to be a var so it can be reset on changes.
@@ -343,14 +354,14 @@ class PoseLandmarkerHelper(
         val finishTimeMs = SystemClock.uptimeMillis()
         val inferenceTime = finishTimeMs - result.timestampMs()
 
-        poseLandmarkerHelperListener?.onResults(
+        val resultBundle =
             ResultBundle(
                 listOf(result),
                 inferenceTime,
                 input.height,
                 input.width
             )
-        )
+        poseLandmarkerHelperListener?.onResults(resultBundle)
     }
 
     // Return errors thrown during detection to this PoseLandmarkerHelper's
