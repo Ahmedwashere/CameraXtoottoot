@@ -14,7 +14,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
-import com.example.cameraxtoottoot.composables.CameraPreviewScreen
+import com.example.cameraxtoottoot.composables.CameraPreviewForWorkoutScreen
 import com.example.cameraxtoottoot.ui.theme.CameraXtoottootTheme
 
 class MainActivity : ComponentActivity() {
@@ -57,7 +57,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         val viewModel = MainViewModel()
                         val workoutResultViewModel = WorkoutResultViewModel()
-                        CameraPreviewScreen(viewModel, workoutResultViewModel)
+                        CameraPreviewForWorkoutScreen(viewModel, workoutResultViewModel)
                     }
                 }
             }
