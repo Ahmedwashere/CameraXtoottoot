@@ -37,6 +37,7 @@ class MainActivity : ComponentActivity() {
                 Log.d("PACKAGE MANAGER", "Camera permission already granted")
                 setCameraPreview()
             }
+
             else -> {
                 Log.d("PACKAGE MANAGER", "Requesting camera permission")
                 cameraPermissionRequest.launch(Manifest.permission.CAMERA)
@@ -55,7 +56,8 @@ class MainActivity : ComponentActivity() {
                         color = MaterialTheme.colorScheme.background
                     ) {
                         val viewModel = MainViewModel()
-                        CameraPreviewScreen(viewModel)
+                        val workoutResultViewModel = WorkoutResultViewModel()
+                        CameraPreviewScreen(viewModel, workoutResultViewModel)
                     }
                 }
             }

@@ -1,5 +1,6 @@
 package com.example.cameraxtoottoot.composables
 
+import android.util.Log
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
@@ -48,11 +49,17 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.example.cameraxtoottoot.MainViewModel
 import com.example.cameraxtoottoot.PoseLandmarkerHelper
 import com.example.cameraxtoottoot.R
+import com.example.cameraxtoottoot.SquatQuality
+import com.example.cameraxtoottoot.WorkoutResultViewModel
 import com.google.mediapipe.tasks.vision.core.RunningMode
+import com.google.mlkit.vision.pose.PoseLandmark
 import java.util.concurrent.Executors
 
 @Composable
-fun CameraPreviewScreen(viewModel: MainViewModel) {
+fun CameraPreviewScreen(
+    viewModel: MainViewModel,
+    workoutResultViewModel: WorkoutResultViewModel
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val previewView = remember {
@@ -106,11 +113,13 @@ fun CameraPreviewScreen(viewModel: MainViewModel) {
         )
     }
 
-    WorkoutScreen {
-        Box(modifier = Modifier
-            .size(380.dp, 450.dp)
-            .padding(start = 0.dp)
-            .clip(RoundedCornerShape(30.dp))) {
+    WorkoutScreen(workoutResultViewModel = workoutResultViewModel) {
+        Box(
+            modifier = Modifier
+                .size(380.dp, 450.dp)
+                .padding(start = 0.dp)
+                .clip(RoundedCornerShape(30.dp))
+        ) {
             AndroidView(
                 { previewView },
                 modifier = Modifier
@@ -118,15 +127,13 @@ fun CameraPreviewScreen(viewModel: MainViewModel) {
                     .padding(start = 0.dp)
                     .clip(RoundedCornerShape(30.dp)),
             )
-            OverlayCanvas(viewModel = viewModel)
+            OverlayCanvas(viewModel = viewModel, workoutResultViewModel = workoutResultViewModel)
         }
     }
-
-
 }
 
 @Composable
-fun OverlayCanvas(viewModel: MainViewModel) {
+fun OverlayCanvas(viewModel: MainViewModel, workoutResultViewModel: WorkoutResultViewModel) {
     val poseResults by viewModel.poseResults.collectAsState()
 
     Canvas(
@@ -137,7 +144,7 @@ fun OverlayCanvas(viewModel: MainViewModel) {
     ) {
         poseResults?.let { resultBundle ->
             val landmarksList = resultBundle.results.first().landmarks()
-            if (landmarksList.size > 0) {
+            if (landmarksList.isNotEmpty()) {
                 val landmarks = landmarksList.first()
                 landmarks.forEach { landmark ->
                     drawCircle(
@@ -149,6 +156,76 @@ fun OverlayCanvas(viewModel: MainViewModel) {
                         radius = 8f
                     )
                 }
+
+                val leftHip = landmarks[PoseLandmark.LEFT_HIP]
+                val leftKnee = landmarks[PoseLandmark.LEFT_KNEE]
+                val leftAnkle = landmarks[PoseLandmark.LEFT_ANKLE]
+
+                val kneeAngle = viewModel.calculateAngle(leftHip, leftKnee, leftAnkle)
+                val isSquatDeepEnough = kneeAngle <= 100
+
+                Log.d("KNEE_ANGLE", "The Knee Angle is $kneeAngle.")
+                Log.d("KNEE_ANGLE", "The Squat is Deep enough: $isSquatDeepEnough")
+
+                val rightKnee = landmarks[PoseLandmark.RIGHT_KNEE]
+                val rightAnkle = landmarks[PoseLandmark.RIGHT_ANKLE]
+
+                val isKneesCollapsing =
+                    (leftKnee.x() - leftAnkle.x()) * (rightKnee.x() - rightAnkle.x()) < 0
+
+                if (isKneesCollapsing) {
+                    workoutResultViewModel.setCollapseKneeFramesCount(workoutResultViewModel.getCollapseKneeFrameCount() + 1)
+                    if (workoutResultViewModel.getCollapseKneeFrameCount() >= 3) {
+                        workoutResultViewModel.setKneeCollapsed(true)
+                    }
+                }
+
+                Log.d("KNEE_COLLAPSING", "The Knee Collapsing: $isKneesCollapsing")
+
+                // Add the Functionality of Updating the currentState: Standing, Squating, Etc
+                workoutResultViewModel.setCurrentPosition(kneeAngle)
+
+                /* Check if we are standing. If we are, then check the values of our Deep Squat Frames.
+                * If we see 3 valid frames, then increase rep count and reset the values of out deep squat
+                * and need improvement squat count. If 3 need improvement frames are see instead,
+                * Then the user did not squat deep enough. Also reset knee collapse as we are on a new repetition
+                */
+                if (workoutResultViewModel.getCurrentPosition() == SquatQuality.STANDING) {
+                    if (workoutResultViewModel.getDeepSquatFramesCount() >= 3) {
+                        workoutResultViewModel.setSquatRepetitions(
+                            workoutResultViewModel.getSquatRepetitions() + 1
+                        )
+                        workoutResultViewModel.setDeepSquatFramesCount(0)
+                        workoutResultViewModel.setNeedImprovementSquatFramesCount(0)
+                        Log.d(
+                            "REPS_GOOD",
+                            "Increased the number of repetitions to ${workoutResultViewModel.getSquatRepetitions()}"
+                        )
+
+                    } else if (workoutResultViewModel.getNeedImprovementSquatFramesCount() >= 3) {
+                        workoutResultViewModel.setNeedImprovement(true)
+                        workoutResultViewModel.setDeepSquatFramesCount(0)
+                        workoutResultViewModel.setNeedImprovementSquatFramesCount(0)
+                        workoutResultViewModel.setSquatRepetitions(
+                            workoutResultViewModel.getSquatRepetitions() + 1
+                        )
+                        Log.d(
+                            "REPS_NEED_IMPROVEMENT",
+                            "Increased the number of repetitions to ${workoutResultViewModel.getSquatRepetitions()}"
+                        )
+                    }
+                } else if (workoutResultViewModel.getCurrentPosition() == SquatQuality.DEEP_SQUAT) {
+                    // Increment the deep squat frame count
+                    workoutResultViewModel.setDeepSquatFramesCount(workoutResultViewModel.getDeepSquatFramesCount() + 1)
+
+                } else if (workoutResultViewModel.getCurrentPosition() == SquatQuality.NEEDS_IMPROVEMENT) {
+                    // Increment the needs improvement frame count
+                    workoutResultViewModel.setNeedImprovementSquatFramesCount(workoutResultViewModel.getNeedImprovementSquatFramesCount() + 1)
+
+                } else {
+                    // No Operation Here
+                    Log.d("SQUAT_POSITION", "The current position is in the NO_OPERATION_ZONE.")
+                }
             }
         }
     }
@@ -156,7 +233,8 @@ fun OverlayCanvas(viewModel: MainViewModel) {
 
 @Composable
 fun WorkoutScreen(
-    event: @Composable () -> Unit
+    workoutResultViewModel: WorkoutResultViewModel,
+    event: @Composable () -> Unit,
 ) {
     Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
 
@@ -267,7 +345,7 @@ fun WorkoutScreen(
 
                             /** TODO: Replace With The Number Of Repetitions That the user said they would perform */
                             Text(
-                                "5",
+                                    "5",
                                 color = Color.White,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.SemiBold,
@@ -288,9 +366,9 @@ fun WorkoutScreen(
 
                     /** TODO: Replace the values with a second value*/
                     Text(
-                        "5",
+                        workoutResultViewModel.getSquatRepetitions().toString(),
                         modifier = Modifier.align(Alignment.Center),
-                        fontSize = 56.sp,
+                        fontSize = 40.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
@@ -305,7 +383,8 @@ fun WorkoutScreen(
 @androidx.compose.ui.tooling.preview.Preview
 @Composable
 fun WorkoutScreenPreview() {
-    WorkoutScreen {
+    val workoutResultViewModel = WorkoutResultViewModel()
+    WorkoutScreen(workoutResultViewModel = workoutResultViewModel) {
         /** TODO: Replace The Image With the Camera Preview and Canvas*/
         Image(
             painter = painterResource(id = R.drawable.workout_image),

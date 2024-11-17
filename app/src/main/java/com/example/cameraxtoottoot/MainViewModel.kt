@@ -2,8 +2,12 @@ package com.example.cameraxtoottoot
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import java.lang.Math.atan2
+import kotlin.math.abs
+import kotlin.math.atan2
 
 /**
  *  This ViewModel is used to store pose landmarker helper settings
@@ -65,5 +69,28 @@ class MainViewModel : ViewModel(), PoseLandmarkerHelper.LandmarkerListener {
 
     override fun onResults(resultBundle: PoseLandmarkerHelper.ResultBundle) {
         _poseResults.value = resultBundle
+    }
+
+    fun calculateAngle(
+        firstPoint: NormalizedLandmark,
+        midPoint: NormalizedLandmark,
+        lastPoint: NormalizedLandmark
+    ): Double {
+        val result = Math.toDegrees(
+            (atan2(
+                lastPoint.y() - midPoint.y(),
+                lastPoint.x() - midPoint.x()
+            ) - atan2(
+                firstPoint.y() - midPoint.y(),
+                firstPoint.x() - midPoint.x()
+            )).toDouble()
+        )
+        var angle = abs(result) // Angle in degrees
+
+        if (angle > 180) {
+            angle = 360.0 - angle
+        }
+
+        return angle
     }
 }
