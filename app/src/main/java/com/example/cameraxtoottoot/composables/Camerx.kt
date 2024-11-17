@@ -106,44 +106,23 @@ fun CameraPreviewScreen(viewModel: MainViewModel) {
         )
     }
 
-    Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
-        AndroidView(
-            { previewView },
-            modifier = Modifier
-                .size(height = 500.dp, width = 400.dp)
-                .align(Alignment.TopCenter)
-                .padding(60.dp)
-                .clip(RoundedCornerShape(10.dp)),
-        )
-        OverlayCanvas(viewModel = viewModel)
-
-        Column(modifier = Modifier.fillMaxSize()) {
-            Spacer(
+    WorkoutScreen {
+        Box(modifier = Modifier
+            .size(380.dp, 450.dp)
+            .padding(start = 0.dp)
+            .clip(RoundedCornerShape(30.dp))) {
+            AndroidView(
+                { previewView },
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(600.dp)
+                    .size(380.dp, 450.dp)
+                    .padding(start = 0.dp)
+                    .clip(RoundedCornerShape(30.dp)),
             )
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFF666666), RoundedCornerShape(10.dp))
-                    .padding(15.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                CircularProgressIndicator(
-                    progress = { return@CircularProgressIndicator 0.70f },
-                    modifier = Modifier.size(100.dp),
-                    strokeWidth = 20.dp,
-                    strokeCap = StrokeCap.Round,
-                    trackColor = Color.White,
-                    color = Color.Blue
-                )
-            }
+            OverlayCanvas(viewModel = viewModel)
         }
-
-
     }
+
+
 }
 
 @Composable
@@ -152,8 +131,9 @@ fun OverlayCanvas(viewModel: MainViewModel) {
 
     Canvas(
         modifier = Modifier
-            .size(height = 500.dp, width = 400.dp)
-            .padding(60.dp)
+            .size(380.dp, 450.dp)
+            .padding(start = 0.dp)
+            .clip(RoundedCornerShape(30.dp))
     ) {
         poseResults?.let { resultBundle ->
             val landmarksList = resultBundle.results.first().landmarks()
@@ -174,34 +154,44 @@ fun OverlayCanvas(viewModel: MainViewModel) {
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview
 @Composable
-fun PreviewOfWorkoutScreen() {
+fun WorkoutScreen(
+    event: @Composable () -> Unit
+) {
     Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
 
-        Column(modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)) {
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp)
-                .padding(start = 40.dp, end = 25.dp),
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(80.dp)
+                    .padding(start = 40.dp, end = 25.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween) {
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 /** TODO: Replace the countdown with the Video Model */
-                Text("00:34",
+                Text(
+                    "00:34",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.White)
+                    color = Color.White
+                )
 
                 Button(
                     modifier = Modifier.size(40.dp),
-                    onClick = {/** TODO: Add pausing Timer Functionality */},
+                    onClick = { /** TODO: Add pausing Timer Functionality */ },
                     contentPadding = PaddingValues(0.dp),
-                    colors = ButtonColors(containerColor = Color.Transparent,
+                    colors = ButtonColors(
+                        containerColor = Color.Transparent,
                         contentColor = Color.Transparent,
                         disabledContentColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent)
+                        disabledContainerColor = Color.Transparent
+                    )
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.pause_icon),
@@ -211,18 +201,9 @@ fun PreviewOfWorkoutScreen() {
                 }
             }
 
-            /** TODO: Replace The Image With the Camera Preview and Canvas*/
-            Image(
-                painter = painterResource(id = R.drawable.workout_image),
-                contentDescription = "Man Squatting",
-                modifier = Modifier
-                    .size(380.dp, 450.dp)
-                    .align(Alignment.CenterHorizontally)
-                    .padding(start = 0.dp)
-                    .clip(RoundedCornerShape(30.dp)),
-                contentScale = ContentScale.Crop
-            )
-            
+            // Call The Lambda Function Here
+            event()
+
             Spacer(modifier = Modifier.height(15.dp))
 
             Column(
@@ -234,17 +215,22 @@ fun PreviewOfWorkoutScreen() {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
-                Box (modifier = Modifier.fillMaxSize()) {
+                Box(modifier = Modifier.fillMaxSize()) {
 
-                    Row (modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween) {
-                        Row (
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.height(30.dp).width(100.dp).padding(start = 30.dp),
+                            modifier = Modifier
+                                .height(30.dp)
+                                .width(100.dp)
+                                .padding(start = 30.dp),
                         ) {
                             Image(
                                 painter = painterResource(id = R.drawable.timer_icon),
@@ -252,7 +238,7 @@ fun PreviewOfWorkoutScreen() {
                                 modifier = Modifier.size(30.dp)
                             )
 
-                            /** 80 seconds will be the hard coded amount of time for a set */
+                            /** 60 seconds will be the hard coded amount of time for a set */
                             Text(
                                 "60s",
                                 color = Color.White,
@@ -261,16 +247,22 @@ fun PreviewOfWorkoutScreen() {
                             )
                         }
 
-                        Row (
+                        Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.height(30.dp).width(80.dp).padding(end = 30.dp),
+                            modifier = Modifier
+                                .height(30.dp)
+                                .width(80.dp)
+                                .padding(end = 30.dp),
                         ) {
                             Image(
                                 painter = painterResource(id = R.drawable.squat_icon),
                                 contentDescription = "timer icon",
                                 // Order of function calls matters in the Modifier!?!
-                                modifier = Modifier.clip(CircleShape).size(30.dp).background(Color(0xFF92C851)),
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .size(30.dp)
+                                    .background(Color(0xFF92C851)),
                             )
 
                             /** TODO: Replace With The Number Of Repetitions That the user said they would perform */
@@ -295,15 +287,34 @@ fun PreviewOfWorkoutScreen() {
                     )
 
                     /** TODO: Replace the values with a second value*/
-                    Text("5",
+                    Text(
+                        "5",
                         modifier = Modifier.align(Alignment.Center),
                         fontSize = 56.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White)
+                        color = Color.White
+                    )
                 }
             }
         }
 
 
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview
+@Composable
+fun WorkoutScreenPreview() {
+    WorkoutScreen {
+        /** TODO: Replace The Image With the Camera Preview and Canvas*/
+        Image(
+            painter = painterResource(id = R.drawable.workout_image),
+            contentDescription = "Man Squatting",
+            modifier = Modifier
+                .size(380.dp, 450.dp)
+                .padding(start = 0.dp)
+                .clip(RoundedCornerShape(30.dp)),
+            contentScale = ContentScale.Crop
+        )
     }
 }
